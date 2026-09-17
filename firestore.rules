@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isFormOwner(formId) {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/forms/$(formId)).data.owner_uid == request.auth.uid;
+    }
+
+    match /forms/{formId} {
+      allow create: if request.auth != null && request.resource.data.owner_uid == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.owner_uid == request.auth.uid;
+    }
+
+    match /live_forms/{formId} {
+      allow read: if true;
+      allow write, delete: if isFormOwner(formId);
+    }
+
+    match /responses/{responseId} {
+      allow create: if request.resource.data.keys().hasAll(['form_id', 'submitted_at', 'answers']);
+      allow read, delete: if isFormOwner(resource.data.form_id);
+      allow update: if false; 
+    }
+  }
+}
