@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Loader2, MapPin, CheckCircle2, AlertCircle, Upload, X, Camera } from 'lucide-react';
+import { Loader2, MapPin, CheckCircle2, AlertCircle, Upload, X, Camera, MessageCircle, Phone } from 'lucide-react';
 import { getPublicForm, addResponse } from '../services/formsStore';
 import type { Form, FormField, AnswerValue } from '../types/forms.types';
 import PhoneField from '../components/fields/PhoneField';
@@ -389,15 +389,62 @@ const PublicFormPage: React.FC = () => {
     </div>
   );
 
-  if (state === 'submitted') return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-gray-50 text-center px-6">
-      <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-lg">
-        <CheckCircle2 className="w-10 h-10 text-green-600" />
+  if (state === 'submitted') {
+    const profile = form?.business_profile;
+    
+    return (
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-gray-50 text-center px-6 pb-20">
+        
+        {profile && (profile.logo || profile.name) && (
+          <div className="mb-8 flex flex-col items-center animate-in slide-in-from-bottom-4 duration-500">
+            {profile.logo ? (
+              <img src={profile.logo} alt="Company Logo" className="w-24 h-24 object-contain rounded-2xl shadow-sm border border-gray-200 mb-4 bg-white" />
+            ) : (
+              <div className="w-24 h-24 bg-purple-100 rounded-2xl flex items-center justify-center mb-4 shadow-sm border border-purple-50">
+                <span className="text-4xl text-purple-400">🏢</span>
+              </div>
+            )}
+            {profile.name && <h2 className="text-2xl font-black text-gray-900 tracking-tight">{profile.name}</h2>}
+          </div>
+        )}
+
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-5 shadow-inner">
+          <CheckCircle2 className="w-8 h-8 text-green-600" />
+        </div>
+        <h1 className="text-xl font-bold text-gray-900 mb-2">Response submitted!</h1>
+        <p className="text-gray-500 text-sm max-w-xs mb-10">Thank you for completing this form. Your response has been recorded.</p>
+        
+        {profile && (profile.location || profile.phone || profile.whatsapp) && (
+          <div className="w-full max-w-sm flex justify-center flex-wrap gap-3 animate-in slide-in-from-bottom-8 duration-700">
+            {profile.location && (
+              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(profile.location)}`} target="_blank" rel="noreferrer" className="flex-1 min-w-[100px] flex flex-col items-center gap-2 p-3 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-purple-200 hover:shadow-md transition-all group">
+                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                  <MapPin className="w-5 h-5 text-blue-500" />
+                </div>
+                <span className="text-xs font-semibold text-gray-600">Location</span>
+              </a>
+            )}
+            {profile.phone && (
+              <a href={`tel:${profile.phone}`} className="flex-1 min-w-[100px] flex flex-col items-center gap-2 p-3 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-purple-200 hover:shadow-md transition-all group">
+                <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+                  <Phone className="w-5 h-5 text-purple-500" />
+                </div>
+                <span className="text-xs font-semibold text-gray-600">Call Us</span>
+              </a>
+            )}
+            {profile.whatsapp && (
+              <a href={`https://wa.me/${profile.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="flex-1 min-w-[100px] flex flex-col items-center gap-2 p-3 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-purple-200 hover:shadow-md transition-all group">
+                <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center group-hover:bg-green-100 transition-colors">
+                  <MessageCircle className="w-5 h-5 text-green-500" />
+                </div>
+                <span className="text-xs font-semibold text-gray-600">WhatsApp</span>
+              </a>
+            )}
+          </div>
+        )}
       </div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Response submitted!</h1>
-      <p className="text-gray-500 text-sm max-w-xs">Thank you for completing this form. Your response has been recorded.</p>
-    </div>
-  );
+    );
+  }
 
   if (!form) return null;
 

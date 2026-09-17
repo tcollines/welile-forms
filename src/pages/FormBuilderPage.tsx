@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Save, Globe, Lock, Eye, Plus, Trash2, Copy,
   ChevronUp, ChevronDown, GripVertical, Settings2, Loader2, CheckCircle2,
-  Link2, Check, X as XIcon, Download,
+  Link2, Check, X as XIcon, Download, MapPin,
 } from 'lucide-react';
 import { useFormsAuth } from '../context/FormsAuthContext';
 import { getForm, saveForm, publishSnapshot, unpublishSnapshot } from '../services/formsStore';
@@ -234,6 +234,99 @@ const defaultField = (type: FieldType): FormField => {
   return field;
 };
 
+// ─── Business Profile Modal ───────────────────────────────────────────────────
+
+const BusinessProfileModal: React.FC<{
+  currentProfile?: import('../types/forms.types').BusinessProfile;
+  onConfirm: (profile: import('../types/forms.types').BusinessProfile) => void;
+  onSkip: () => void;
+  onCancel: () => void;
+}> = ({ currentProfile, onConfirm, onSkip, onCancel }) => {
+  const [profile, setProfile] = useState(currentProfile || {});
+  const logoInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleLogoPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setProfile({ ...profile, logo: reader.result as string });
+    reader.readAsDataURL(file);
+  };
+
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const captureGPS = () => {
+    if (!navigator.geolocation) return;
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setProfile(prev => ({ ...prev, location: `${pos.coords.latitude}, ${pos.coords.longitude}` }));
+        setGpsLoading(false);
+      },
+      (err) => {
+        console.error(err);
+        setGpsLoading(false);
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm px-4">
+      <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-bold text-gray-900 text-lg">Market Your Company (Optional)</h2>
+          <button onClick={onCancel} className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"><XIcon className="w-4 h-4" /></button>
+        </div>
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
+           {/* Logo */}
+           <div>
+             <label className="block text-xs font-bold text-gray-700 mb-1">Company Logo</label>
+             <div className="flex items-center gap-4">
+               {profile.logo ? (
+                  <img src={profile.logo} alt="Logo" className="w-16 h-16 rounded-xl object-cover border border-gray-200" />
+               ) : (
+                  <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center border border-gray-200 text-2xl">🏢</div>
+               )}
+               <button onClick={() => logoInputRef.current?.click()} className="px-3 py-1.5 bg-purple-50 text-purple-600 rounded-lg text-xs font-bold hover:bg-purple-100 transition-all">Upload Logo</button>
+               {profile.logo && <button onClick={() => setProfile({...profile, logo: undefined})} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-all">Remove</button>}
+               <input type="file" ref={logoInputRef} onChange={handleLogoPick} accept="image/*" className="hidden" />
+             </div>
+           </div>
+           {/* Name */}
+           <div>
+             <label className="block text-xs font-bold text-gray-700 mb-1">Company Name</label>
+             <input type="text" value={profile.name || ''} onChange={e => setProfile({...profile, name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-purple-500" placeholder="e.g. Acme Corp" />
+           </div>
+           {/* Location */}
+           <div>
+             <label className="block text-xs font-bold text-gray-700 mb-1">Location</label>
+             <div className="relative">
+               <input type="text" value={profile.location || ''} onChange={e => setProfile({...profile, location: e.target.value})} className="w-full pl-3 pr-10 py-2 border border-gray-200 rounded-xl text-sm focus:outline-purple-500" placeholder="e.g. New York, NY" />
+               <button type="button" onClick={captureGPS} title="Get Current Location" className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 hover:text-purple-500 hover:bg-purple-50 transition-colors">
+                 {gpsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+               </button>
+             </div>
+           </div>
+           {/* Contact */}
+           <div>
+             <label className="block text-xs font-bold text-gray-700 mb-1">Contact Number</label>
+             <input type="text" value={profile.phone || ''} onChange={e => setProfile({...profile, phone: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-purple-500" placeholder="e.g. +1 234 567 8900" />
+           </div>
+           {/* WhatsApp */}
+           <div>
+             <label className="block text-xs font-bold text-gray-700 mb-1">WhatsApp Number (incl country code)</label>
+             <input type="text" value={profile.whatsapp || ''} onChange={e => setProfile({...profile, whatsapp: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-purple-500" placeholder="e.g. 12345678900" />
+           </div>
+        </div>
+        <div className="flex gap-3 mt-6 pt-2 border-t border-gray-100">
+          <button onClick={onSkip} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition-all">Skip</button>
+          <button onClick={() => onConfirm(profile)} className="flex-[2] py-2.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-white text-sm font-bold text-center transition-all">Save & Publish</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const FormBuilderPage: React.FC = () => {
   const { formId } = useParams<{ formId: string }>();
   const { formsUser } = useFormsAuth();
@@ -248,6 +341,8 @@ const FormBuilderPage: React.FC = () => {
   const [dragOver, setDragOver] = useState<string | null>(null);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showBusinessProfileModal, setShowBusinessProfileModal] = useState(false);
+  const [publishAction, setPublishAction] = useState<'publish' | 'republish' | null>(null);
   const [generatingAI, setGeneratingAI] = useState(false);
 
   // Cover photo
@@ -406,8 +501,26 @@ const FormBuilderPage: React.FC = () => {
       }
       setIsDirty(false);
     } else {
-      const next = { ...form, status: 'published' as const };
-      update({ status: 'published' });
+      setPublishAction('publish');
+      setShowBusinessProfileModal(true);
+    }
+  };
+
+  const handleRepublish = async () => {
+    if (!form) return;
+    setPublishAction('republish');
+    setShowBusinessProfileModal(true);
+  };
+
+  const executePublishAction = async (profile?: import('../types/forms.types').BusinessProfile) => {
+    if (!form) return;
+    const finalForm = profile ? { ...form, business_profile: profile } : form;
+    
+    if (profile) update({ business_profile: profile });
+
+    if (publishAction === 'publish') {
+      const next = { ...finalForm, status: 'published' as const };
+      update({ status: 'published' }); // local sync state
       const saved = await saveForm(next);
       try {
         await publishSnapshot(saved);
@@ -415,24 +528,23 @@ const FormBuilderPage: React.FC = () => {
         console.error('[publish] publishSnapshot failed:', e);
       }
       setIsDirty(false);
+      setShowBusinessProfileModal(false);
+      setShowPublishModal(true);
+    } else if (publishAction === 'republish') {
+      setSaving(true);
+      try {
+        const latestSaved = await saveForm(finalForm);
+        await publishSnapshot(latestSaved);
+      } catch (e) {
+        console.error('[handleRepublish] publishSnapshot failed:', e);
+      }
+      setSaving(false);
+      setIsDirty(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      setShowBusinessProfileModal(false);
       setShowPublishModal(true);
     }
-  };
-
-  const handleRepublish = async () => {
-    if (!form) return;
-    setSaving(true);
-    try {
-      const latestSaved = await saveForm(form);
-      await publishSnapshot(latestSaved);
-    } catch (e) {
-      console.error('[handleRepublish] publishSnapshot failed:', e);
-    }
-    setSaving(false);
-    setIsDirty(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    setShowPublishModal(true);
   };
 
   const selectedField = form?.fields.find(f => f.id === selectedId) ?? null;
@@ -451,8 +563,15 @@ const FormBuilderPage: React.FC = () => {
     <div className="h-[100dvh] bg-gray-50 text-gray-900 font-sans flex flex-col overflow-hidden">
 
       {/* Publish modal */}
-      {showPublishModal && form && (
-        <PublishModal formId={form.id} onClose={() => setShowPublishModal(false)} />
+      {showPublishModal && <PublishModal formId={form.id} onClose={() => setShowPublishModal(false)} />}
+      
+      {showBusinessProfileModal && (
+        <BusinessProfileModal 
+          currentProfile={form.business_profile} 
+          onConfirm={(profile) => executePublishAction(profile)}
+          onSkip={() => executePublishAction(undefined)}
+          onCancel={() => setShowBusinessProfileModal(false)}
+        />
       )}
       {/* Import modal */}
       {showImportModal && (

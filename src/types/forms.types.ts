@@ -42,6 +42,14 @@ export interface FormField {
 
 export type FormStatus = 'draft' | 'published';
 
+export interface BusinessProfile {
+  name?: string;
+  logo?: string; // base64
+  location?: string;
+  phone?: string;
+  whatsapp?: string;
+}
+
 export interface Form {
   id: string;
   owner_uid: string;
@@ -56,6 +64,7 @@ export interface Form {
   cover_image?: string; // base64 data-url for the cover photo
   render_style?: 'standard' | 'chatbot'; // UI rendering style
   email_notifications?: boolean; // Send email on new response
+  business_profile?: BusinessProfile;
 }
 
 // ─── Response ─────────────────────────────────────────────────────────────────
